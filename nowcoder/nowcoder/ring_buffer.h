@@ -72,6 +72,7 @@ uint32_t __ring_buffer_get(struct ring_buffer* ring_buf, void* buffer, uint32_t 
     uint32_t len = 0;
     size = min(size, ring_buf->in - ring_buf->out);
     /* first get the data from fifo->out until the end of the buffer */
+    //size参数是2的幂，对kfifo->size取模运算可以转化为与运算，kfifo->in % kfifo->size
     len = min(size, ring_buf->size - (ring_buf->out & (ring_buf->size - 1)));
     memcpy(buffer, &(ring_buf->buffer) + (ring_buf->out & (ring_buf->size - 1)), len);
     /* then get the rest (if any) from the beginning of the buffer */
@@ -84,8 +85,11 @@ uint32_t __ring_buffer_put(struct ring_buffer* ring_buf, void* buffer, uint32_t 
 {
     assert(ring_buf || buffer);
     uint32_t len = 0;
+    //判断剩余空间能否存入新数据
     size = min(size, ring_buf->size - ring_buf->in + ring_buf->out);
     /* first put the data starting from fifo->in to buffer end */
+    //in和out定义为无符号类型，在put和get时，in和out都是增加，
+    //当达到最大值时，产生溢出，使得从0开始，进行循环使用
     len = min(size, ring_buf->size - (ring_buf->in & (ring_buf->size - 1)));
     memcpy(&(ring_buf->buffer) + (ring_buf->in & (ring_buf->size - 1)), buffer, len);
     /* then put the rest (if any) at the beginning of the buffer */
